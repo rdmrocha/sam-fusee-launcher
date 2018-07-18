@@ -1,57 +1,36 @@
+#ifndef _TRINKET_LED_H_
+#define _TRINKET_LED_H_
+
 #include <Arduino.h>
 #include <Adafruit_DotStar.h>
+
+#define LED_CONFIRM_TIME_MS 2000 // How long to show red or green light for success or fail
+
+enum Color {
+  BLACK, RED, GREEN, ORANGE, BLUE
+};
+
 Adafruit_DotStar strip = Adafruit_DotStar(1, INTERNAL_DS_DATA, INTERNAL_DS_CLK, DOTSTAR_BGR);
 
-void ledInit() {
+void ledInit() 
+{
   strip.begin();
   strip.setPixelColor(0, 0, 0, 0);
   strip.show();
 }
 
-void setLedColor(const char color[]) {
-  if (color == "red") {
-    strip.setPixelColor(0, 64, 0, 0);
-  } else if (color == "green") {
-    strip.setPixelColor(0, 0, 64, 0);
-  } else if (color == "orange") {
-    strip.setPixelColor(0, 64, 32, 0);
-  } else if (color == "black") {
-    strip.setPixelColor(0, 0, 0, 0);
-  } else if (color == "blue") {
-    strip.setPixelColor(0, 5, 20, 64);
-  } else if (color == "red2") {
-    strip.setPixelColor(0, 64, 10, 10);
-  } else {
-    strip.setPixelColor(0, 255, 255, 255);
+void setLedColor(Color c) 
+{
+  switch(c) 
+  {
+    case BLACK: strip.setPixelColor(0, 0x0); break;
+    case ORANGE: strip.setPixelColor(0, 0x402000); break;
+    case GREEN: strip.setPixelColor(0, 0x004000); break;
+    case RED: strip.setPixelColor(0, 0x400000); break;
+    case BLUE: strip.setPixelColor(0, 0x051440); break;
+    default: break;
   }
   strip.show();
 }
 
-void ledBlink(const char color[], int count, int duration) {
-  for (int counter = 0; counter < count; counter++) {
-    for (int onOff = 1; onOff >= 0; onOff--) {
-      if (onOff == 1) {
-        setLedColor(color);
-      } else {
-        setLedColor("black");
-      }
-      delay(duration / (2.0 * count));
-    }
-  }
-}
-
-void sleepDeep(int errorCode) {
-  // Turn off all LEDs and go to sleep. To launch another payload, press the reset button on the device.
-  //delay(100);
-  digitalWrite(PIN_LED_RXL, HIGH);
-  digitalWrite(PIN_LED_TXL, HIGH);
-  digitalWrite(13, LOW);
-  if (errorCode == 1) {
-    setLedColor("black");; //led to off
-  } else {
-    setLedColor("red"); //led to red
-  }
-  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; /* Enable deepsleep */
-  __DSB(); /* Ensure effect of last store takes effect */
-  __WFI(); /* Enter sleep mode */
-}
+#endif

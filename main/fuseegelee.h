@@ -1,5 +1,9 @@
+#ifndef _FUSEE_GELEE_H_
+#define _FUSEE_GELEE_H_
+
 #include <Arduino.h>
 #include <Usb.h>
+#include "trinketLed.h"
 
 #define INTERMEZZO_SIZE 92
 const byte intermezzo[INTERMEZZO_SIZE] =
@@ -13,7 +17,7 @@ const byte intermezzo[INTERMEZZO_SIZE] =
 };
 
 #define PACKET_CHUNK_SIZE 0x1000
-
+#define MAX_WAIT_FOR_TEGRA_MS 10000 
 
 USBHost usb;
 EpInfo epInfo[3];
@@ -36,10 +40,11 @@ void usbOutTransferChunk(uint32_t addr, uint32_t ep, uint32_t nbytes, uint8_t* d
 
   usb_pipe_table[epInfo->epAddr].HostDescBank[0].CTRL_PIPE.bit.PDADDR = addr;
 
-  if (epInfo->bmSndToggle)
+  if (epInfo->bmSndToggle) {
     USB->HOST.HostPipe[epInfo->epAddr].PSTATUSSET.reg = USB_HOST_PSTATUSSET_DTGL;
-  else
+  } else {
     USB->HOST.HostPipe[epInfo->epAddr].PSTATUSCLR.reg = USB_HOST_PSTATUSCLR_DTGL;
+  }
 
   UHD_Pipe_Write(epInfo->epAddr, PACKET_CHUNK_SIZE, data);
   uint32_t rcode = usb.dispatchPkt(tokOUT, epInfo->epAddr, 15);
@@ -143,14 +148,32 @@ void findTegraDevice(UsbDeviceDefinition *pdev)
   }
 }
 
-boolean searchTegraDevice()
+boolean waitForTegraDevice()
 {
-  usb.Task();
-  usb.ForEachUsbDevice(&findTegraDevice);
-  return foundTegra;
+  bool blink = true;
+  unsigned long currentTime = 0;
+  unsigned long startWait = millis();
+  while (!foundTegra)
+  {
+    currentTime = millis();
+    usb.Task();
+
+    if (currentTime > lastCheckTime + 100) 
+    {
+      usb.ForEachUsbDevice(&findTegraDevice);
+      setLedColor((blink && !foundTegra) ? ORANGE : BLACK);
+      blink = !blink;
+      lastCheckTime = currentTime;
+    }
+    if (currentTime-startWait > MAX_WAIT_FOR_TEGRA_MS) 
+    {
+      return false;
+    }
+  }
+  return true;
 }
 
-int usbInit()
+inline int usbInit()
 {
    return usb.Init();
 }
@@ -190,3 +213,4 @@ void launchPayload()
               0x00, 0x00, 0x00, 0x00, 0x7000, 0x7000, usbWriteBuffer, NULL);
 }
 
+#endif
