@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "fuseegelee.h"
 #include "hekate_ctcaer_3.2.h" // Contains fuseeBin and FUSEE_BIN_SIZE
+//#include "sx_os_payload.h" // Contains fuseeBin and FUSEE_BIN_SIZE
 
 void deepSleep(int errorCode) 
 {
