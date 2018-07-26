@@ -27,15 +27,18 @@ void deepSleep(int errorCode)
 void setup() 
 {
   ledInit();
-  
-  if (usbInit() == -1) deepSleep(1); // BLUE error code
-  if (!waitForTegraDevice()) deepSleep(-1); // RED error code
-  
-  setupTegraDevice();
-  sendPayload(fuseeBin, FUSEE_BIN_SIZE);
-  launchPayload();
 
-  deepSleep(0);
+  if (usbInit() == -1) deepSleep(1); // BLUE error code
+  Color selectedPayload = waitForTegraDevice();
+  if (selectedPayload == BLACK) deepSleep(-1); // RED error code
+
+  setLedColor(selectedPayload);
+  
+  //setupTegraDevice();
+  //sendPayload(fuseeBin, FUSEE_BIN_SIZE);
+  //launchPayload();
+
+  //deepSleep(0);
 }
 
 void loop(){}

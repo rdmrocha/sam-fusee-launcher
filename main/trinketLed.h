@@ -7,7 +7,7 @@
 #define LED_CONFIRM_TIME_MS 2000 // How long to show red or green light for success or fail
 
 enum Color {
-  BLACK, RED, GREEN, ORANGE, BLUE
+  BLACK, RED, GREEN, ORANGE, BLUE, PURPLE
 };
 
 Adafruit_DotStar strip = Adafruit_DotStar(1, INTERNAL_DS_DATA, INTERNAL_DS_CLK, DOTSTAR_BGR);
@@ -28,6 +28,7 @@ void setLedColor(Color c)
     case GREEN: strip.setPixelColor(0, 0x004000); break;
     case RED: strip.setPixelColor(0, 0x400000); break;
     case BLUE: strip.setPixelColor(0, 0x051440); break;
+    case PURPLE: strip.setPixelColor(0, 0x270030); break;
     default: break;
   }
   strip.show();

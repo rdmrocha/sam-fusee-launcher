@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Usb.h>
+#include <Adafruit_FreeTouch.h>
 #include "trinketLed.h"
 
 #define INTERMEZZO_SIZE 92
@@ -30,6 +31,9 @@ bool foundTegra = false;
 byte tegraDeviceAddress = -1;
 
 unsigned long lastCheckTime = 0;
+
+Adafruit_FreeTouch qtouch = Adafruit_FreeTouch(A0);//, OVERSAMPLE_1, RESISTOR_0, FREQ_MODE_NONE);
+int threshold = qtouch.measure();
 
 // From what I can tell, usb.outTransfer is completely broken for transfers larger than 64 bytes (even if maxPktSize is
 // adjusted for that endpoint). This is a minimal and simplified reimplementation specific to our use cases that fixes
@@ -148,29 +152,50 @@ void findTegraDevice(UsbDeviceDefinition *pdev)
   }
 }
 
-boolean waitForTegraDevice()
+Color waitForTegraDevice()
 {
   bool blink = true;
   unsigned long currentTime = 0;
   unsigned long startWait = millis();
+  bool pressStarted = false;
+  bool waitingForDebounce = false;
+  Color payloadColor = ORANGE;
+  int pressCounter = 0;
   while (!foundTegra)
   {
     currentTime = millis();
-    usb.Task();
+    //usb.Task();
 
-    if (currentTime > lastCheckTime + 100) 
+    if (currentTime > lastCheckTime + 100) // 100 millis each cycle
     {
-      usb.ForEachUsbDevice(&findTegraDevice);
-      setLedColor((blink && !foundTegra) ? ORANGE : BLACK);
+      pressStarted = abs(qtouch.measure()-threshold) > 10;
+      if (pressStarted) {
+        if (!waitingForDebounce) {
+          ++pressCounter;
+        }
+        // reset start while pressing
+        startWait = millis();
+      } else if (waitingForDebounce) {
+        pressCounter = 0;
+        //usb.ForEachUsbDevice(&findTegraDevice);
+        waitingForDebounce = false;
+      }
+
+      if (pressCounter >= 10 && !waitingForDebounce) { //1s press, toggle payload color
+        payloadColor = (payloadColor == ORANGE ? PURPLE : ORANGE);
+        waitingForDebounce = true;
+      }
+      
+      setLedColor((blink && !foundTegra) ? payloadColor : BLACK);
       blink = !blink;
       lastCheckTime = currentTime;
     }
     if (currentTime-startWait > MAX_WAIT_FOR_TEGRA_MS) 
     {
-      return false;
+      return BLACK;
     }
   }
-  return true;
+  return payloadColor;
 }
 
 inline int usbInit()
